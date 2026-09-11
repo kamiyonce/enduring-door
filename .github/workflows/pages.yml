@@ -25,6 +25,8 @@ jobs:
           mkdir -p enduring-pages/assets
           if [ -f door-open.mp4 ]; then cp -f door-open.mp4 enduring-pages/assets/door-open.mp4; fi
           if [ -f door-open-poster.jpg ]; then cp -f door-open-poster.jpg enduring-pages/assets/door-open-poster.jpg; fi
+          if [ -f book-open.mp4 ]; then cp -f book-open.mp4 enduring-pages/assets/book-open.mp4; fi
+          if [ -f book-open-freeze.jpg ]; then cp -f book-open-freeze.jpg enduring-pages/assets/book-open-freeze.jpg; fi
           ls -la enduring-pages/assets
       - uses: actions/configure-pages@v5
         with:
