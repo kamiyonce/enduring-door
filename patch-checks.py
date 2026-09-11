@@ -20,29 +20,100 @@ TROPES = [
     ("ML_dom", "Dom/Sub-Brat Heat", "Dom / brat heat"),
     ("ML_meta", "Fourth Wall Seduction (I'm talking to you)", "fourth wall seduction"),
 ]
-LEFTS = [22.4,23.6,32.4,16.0,17.2,28.6,26.0,33.4,22.4,32.2,28.8,28.2,23.2,27.8,20.4,26.2,24.6]
+# top, first-letter x, last-letter x as % of the 9:16 video frame at 11.05s
+LINES = [
+    (13.55, 24.7, 68.5),
+    (19.30, 20.9, 75.8),
+    (24.22, 32.2, 63.6),
+    (29.30, 17.9, 81.7),
+    (33.91, 19.2, 81.0),
+    (37.73, 31.1, 63.8),
+    (42.50, 25.4, 69.6),
+    (47.03, 33.9, 61.8),
+    (52.27, 22.1, 73.5),
+    (56.48, 33.1, 62.2),
+    (61.17, 28.6, 66.1),
+    (65.70, 28.5, 66.8),
+    (70.23, 22.9, 73.2),
+    (74.77, 28.3, 65.8),
+    (79.53, 20.3, 72.6),
+    (83.75, 26.0, 68.9),
+    (87.55, 24.5, 72.0),
+]
+PAD = 3.15
 CORES = ["ML_demon", "ML_enemies", "ML_hefalls"]
 FLAVOR = [k for k, _, __ in TROPES if k not in CORES]
 
 p = Path("enduring-pages/door.html")
 h = p.read_text()
 
-h = h.replace("height: 3.6%;", "height: 4.45%;")
-h = h.replace("height: 4.4%;", "height: 4.45%;")
-h = h.replace("height: 3.7%;", "height: 4.45%;")
-h = h.replace("height: 4.15%;", "height: 4.45%;")
 h = h.replace("const TROPES_AT = 13.15;", "const TROPES_AT = 11.05;")
 h = h.replace("const TROPES_AT = 10.17;", "const TROPES_AT = 11.05;")
-h = h.replace("left: 11%;", "left: 6%;")
-h = h.replace("left: 8%;", "left: 6%;")
-h = h.replace("right: 11%;", "right: 6%;")
-h = h.replace("right: 8%;", "right: 6%;")
-h = h.replace("justify-content: center;", "justify-content: flex-start;")
 h = h.replace("bottom: 6%;", "bottom: 2.2%;")
 h = h.replace(
     '          <source src="https://enduring-timeline.netlify.app/assets/book-open.mp4" type="video/mp4">\n',
     "",
 )
+
+h = h.replace("object-fit: cover;", "object-fit: contain;")
+
+if ".stage {" not in h:
+    h = h.replace(
+        """  .hero video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+  }""",
+        """  .hero video {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    background: #000;
+  }
+  .stage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: min(100vw, calc(100dvh * 9 / 16));
+    height: min(100dvh, calc(100vw * 16 / 9));
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    pointer-events: none;
+  }
+  .stage .trope-hits.on,
+  .stage .yes-btn.on,
+  .stage .trope-next.on { pointer-events: auto; }""",
+        1,
+    )
+
+h = re.sub(
+    r"  @media \(min-aspect-ratio: 3/4\) \{.*?\n  \}\n",
+    "",
+    h,
+    count=1,
+    flags=re.S,
+)
+
+if 'id="doorStage"' not in h:
+    h = h.replace(
+        '<div class="trope-hits" id="tropeHits" aria-label="Choose tropes">',
+        '<div class="stage" id="doorStage">\n        <div class="trope-hits" id="tropeHits" aria-label="Choose tropes">',
+        1,
+    )
+    h = h.replace(
+        """        <button type="button" class="trope-next" id="tropeNext">Next</button>
+        <button type="button" id="start" class="yes-btn">Yes</button>""",
+        """        <button type="button" class="trope-next" id="tropeNext">Next</button>
+        <button type="button" id="start" class="yes-btn">Yes</button>
+        </div>""",
+        1,
+    )
 
 old_css = """  .trope-hit.on .trope-label {
     color: #070707;
@@ -53,38 +124,47 @@ new_css = (
     "  .trope-hit.on::before {\n"
     "    content: \"" + "\u2713" + "\";\n"
     "    position: absolute;\n"
+    "    left: 0.08em;\n"
     "    top: 50%;\n"
-    "    transform: translate(-1.05em, -50%);\n"
+    "    transform: translateY(-50%);\n"
     "    color: #e2c37a;\n"
-    "    font-size: clamp(13px, 3.1vw, 16px);\n"
+    "    font-size: clamp(14px, 3.4vw, 18px);\n"
     "    font-weight: 700;\n"
     "    line-height: 1;\n"
-    "    text-shadow: 0 1px 4px rgba(0,0,0,.9);\n"
+    "    text-shadow: 0 1px 4px rgba(0,0,0,.95);\n"
     "    pointer-events: none;\n"
     "  }"
 )
 if old_css in h:
     h = h.replace(old_css, new_css, 1)
 
-h = h.replace(
-    """    margin-right: 0.32em;
-    text-shadow: 0 1px 4px rgba(0,0,0,.9);
-    pointer-events: none;
-  }""",
-    """    position: absolute;
-    top: 50%;
-    transform: translate(-1.05em, -50%);
-    text-shadow: 0 1px 4px rgba(0,0,0,.9);
-    pointer-events: none;
-  }""",
-)
-
-if "-webkit-tap-highlight-color" not in h:
+h = h.replace("transform: translate(-1.05em, -50%);", "transform: translateY(-50%);")
+if "left: 0.08em;" not in h:
     h = h.replace(
-        "transform: translateY(-50%);",
-        "transform: translateY(-50%);\n    -webkit-tap-highlight-color: transparent;",
+        "  .trope-hit.on::before {\n    content:",
+        "  .trope-hit.on::before {\n    left: 0.08em;\n    content:",
         1,
     )
+
+h = re.sub(
+    r"  \.trope-hit \{.*?\n  \}",
+    "  .trope-hit {\n"
+    "    appearance: none;\n"
+    "    position: absolute;\n"
+    "    height: 3.95%;\n"
+    "    margin: 0;\n"
+    "    padding: 0;\n"
+    "    border: 0;\n"
+    "    background: transparent;\n"
+    "    cursor: pointer;\n"
+    "    display: block;\n"
+    "    transform: translateY(-50%);\n"
+    "    -webkit-tap-highlight-color: transparent;\n"
+    "  }",
+    h,
+    count=1,
+    flags=re.S,
+)
 
 if ".trope-hit:active" not in h:
     h = h.replace(
@@ -96,27 +176,20 @@ if ".trope-hit:active" not in h:
         1,
     )
 
-# wipe every per-line rule so leftover 14-line CSS cannot win
-h = re.sub(r"  \.trope-hit:nth-child\(\d+\) \{ top: [0-9.]+%; \}\n", "", h)
-h = re.sub(r"  \.trope-hit:nth-child\(\d+\)\.on::before \{ left: [0-9.]+%; \}\n", "", h)
+h = re.sub(r"  \.trope-hit:nth-child\(\d+\) \{[^}]+\}\n", "", h)
+h = re.sub(r"  \.trope-hit:nth-child\(\d+\)\.on::before \{[^}]+\}\n", "", h)
 
-n = len(TROPES)
-start, end = 15.55, 86.20
-step = (end - start) / (n - 1)
-block = "".join(
-    f"  .trope-hit:nth-child({i+1}) {{ top: {start + i * step:.2f}%; }}\n" for i in range(n)
-)
+block = []
+for i, (top, first, last) in enumerate(LINES, 1):
+    left = first - PAD
+    width = (last - first) + PAD + 2.2
+    block.append(
+        f"  .trope-hit:nth-child({i}) {{ top: {top:.2f}%; left: {left:.2f}%; width: {width:.2f}%; }}\n"
+    )
+block = "".join(block)
 if "  .trope-label {" not in h:
     raise SystemExit("no trope-label")
 h = h.replace("  .trope-label {", block + "  .trope-label {", 1)
-
-cks = "".join(
-    f"  .trope-hit:nth-child({i+1}).on::before {{ left: {LEFTS[i]:.2f}%; }}\n"
-    for i in range(n)
-)
-if "  .trope-next {" not in h:
-    raise SystemExit("no trope-next")
-h = h.replace("  .trope-next {", cks + "  .trope-next {", 1)
 
 hits = re.search(
     r'<div class="trope-hits" id="tropeHits" aria-label="Choose tropes">.*?</div>',
@@ -214,10 +287,10 @@ new_play = "if (v) { try { v.currentTime = 0; v.muted = false; v.play().catch(()
 if old_play in h:
     h = h.replace(old_play, new_play, 1)
 
-if "top: 15.55%" not in h or "top: 86.20%" not in h:
-    raise SystemExit("MMC/Fourth Wall tops failed")
-if h.count(".trope-hit:nth-child") < 34:
-    raise SystemExit("expected 17 tops + 17 check xs")
+if "top: 13.55%" not in h or "top: 87.55%" not in h:
+    raise SystemExit("ink geometry failed")
+if 'id="doorStage"' not in h:
+    raise SystemExit("stage missing")
 
 p.write_text(h)
-print("patched MMC-to-Fourth-Wall taps")
+print("patched ink-aligned 17 hits")
