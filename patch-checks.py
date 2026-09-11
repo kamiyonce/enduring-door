@@ -56,6 +56,47 @@ if "-webkit-tap-highlight-color" not in h:
         1,
     )
 
+if ".hero video.laugh" not in h:
+    h = h.replace(
+        """  .hero video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #000;
+  }""",
+        """  .hero video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #000;
+  }
+  .hero video.laugh {
+    display: none;
+    object-fit: contain;
+    z-index: 2;
+  }
+  .hero video.laugh.on { display: block; }""",
+        1,
+    )
+
+if 'id="doorLaugh"' not in h:
+    h = h.replace(
+        """        <video id="doorZoom" muted playsinline preload="auto" poster="assets/book-open-freeze.jpg" aria-label="Enduring — can you endure me?">
+          <source src="assets/book-open.mp4" type="video/mp4">
+          <source src="https://enduring-timeline.netlify.app/assets/book-open.mp4" type="video/mp4">
+        </video>""",
+        """        <video id="doorZoom" muted playsinline preload="auto" poster="assets/book-open-freeze.jpg" aria-label="Enduring — can you endure me?">
+          <source src="assets/book-open.mp4" type="video/mp4">
+          <source src="https://enduring-timeline.netlify.app/assets/book-open.mp4" type="video/mp4">
+        </video>
+        <video id="doorLaugh" class="laugh" muted playsinline preload="auto" poster="assets/door-open-poster.jpg" aria-label="The book opens">
+          <source src="assets/door-open.mp4" type="video/mp4">
+        </video>""",
+        1,
+    )
+
 nth = re.search(
     r"  \.trope-hit:nth-child\(1\) \{ top: [0-9.]+%; \}.*?  \.trope-hit:nth-child\(\d+\) \{ top: [0-9.]+%; \}\n",
     h,
@@ -139,6 +180,39 @@ if old_click in h:
 if "syncTropeNext" not in h:
     raise SystemExit("failed to insert Next gate")
 
+old_yes = """  yes.onclick = () => {
+    yes.classList.remove('on');
+    yes.classList.add('exhale');
+    phase = 'open';
+    v.play().catch(() => {});
+  };"""
+new_yes = """  const laugh = document.getElementById('doorLaugh');
+  function showTropes() {
+    if (laugh) laugh.classList.remove('on');
+    hold(TROPES_AT);
+    phase = 'tropes';
+    document.getElementById('tropeHits').classList.add('on');
+    syncTropeNext();
+  }
+  yes.onclick = () => {
+    yes.classList.remove('on');
+    yes.classList.add('exhale');
+    phase = 'open';
+    if (laugh) {
+      laugh.classList.add('on');
+      laugh.currentTime = 0;
+      laugh.muted = false;
+      const done = () => { laugh.onended = null; showTropes(); };
+      laugh.onended = done;
+      laugh.play().catch(() => { laugh.muted = true; laugh.play().catch(() => showTropes()); });
+      setTimeout(() => { if (phase === 'open') showTropes(); }, 4200);
+    } else {
+      v.play().catch(() => {});
+    }
+  };"""
+if old_yes in h:
+    h = h.replace(old_yes, new_yes, 1)
+
 old_no = "I felt your heart flutter on the first (' + (first || 'mismatch') + '). Trust me"
 new_no = "I felt your heart flutter when you clicked it. But you are nervous so this door is not opening for you. Trust me"
 if old_no in h:
@@ -168,6 +242,8 @@ if old_play in h:
 
 if "ML_captor" not in h or "Fourth Wall Seduction" not in h:
     raise SystemExit("trope rebuild failed")
+if 'id="doorLaugh"' not in h:
+    raise SystemExit("laugh clip not wired")
 
 p.write_text(h)
-print("patched tropes + checks + gates")
+print("patched tropes + laugh-after-yes")
