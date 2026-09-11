@@ -20,15 +20,26 @@ TROPES = [
     ("ML_dom", "Dom/Sub-Brat Heat", "Dom / brat heat"),
     ("ML_meta", "Fourth Wall Seduction (I'm talking to you)", "fourth wall seduction"),
 ]
+LEFTS = [21.0,16.2,32.2,15.1,16.3,31.3,25.4,34.2,22.2,33.9,28.6,28.5,23.1,28.3,20.6,26.4,26.4]
 CORES = ["ML_demon", "ML_enemies", "ML_hefalls"]
 FLAVOR = [k for k, _, __ in TROPES if k not in CORES]
 
 p = Path("enduring-pages/door.html")
 h = p.read_text()
 
-h = h.replace("height: 3.6%;", "height: 3.7%;", 1)
-h = h.replace("height: 4.4%;", "height: 3.7%;", 1)
-h = h.replace("const TROPES_AT = 13.15;", "const TROPES_AT = 10.17;")
+h = h.replace("height: 3.6%;", "height: 4.15%;", 1)
+h = h.replace("height: 4.4%;", "height: 4.15%;", 1)
+h = h.replace("height: 3.7%;", "height: 4.15%;", 1)
+h = h.replace("const TROPES_AT = 13.15;", "const TROPES_AT = 11.05;")
+h = h.replace("const TROPES_AT = 10.17;", "const TROPES_AT = 11.05;")
+h = h.replace("left: 11%;", "left: 8%;")
+h = h.replace("right: 11%;", "right: 8%;")
+h = h.replace("justify-content: center;", "justify-content: flex-start;")
+h = h.replace("bottom: 6%;", "bottom: 2.2%;")
+h = h.replace(
+    '          <source src="https://enduring-timeline.netlify.app/assets/book-open.mp4" type="video/mp4">\n',
+    "",
+)
 
 old_css = """  .trope-hit.on .trope-label {
     color: #070707;
@@ -38,17 +49,32 @@ old_css = """  .trope-hit.on .trope-label {
 new_css = (
     "  .trope-hit.on::before {\n"
     "    content: \"" + "\u2713" + "\";\n"
+    "    position: absolute;\n"
+    "    top: 50%;\n"
+    "    transform: translate(-1.05em, -50%);\n"
     "    color: #e2c37a;\n"
-    "    font-size: clamp(13px, 3.2vw, 17px);\n"
+    "    font-size: clamp(13px, 3.1vw, 16px);\n"
     "    font-weight: 700;\n"
     "    line-height: 1;\n"
-    "    margin-right: 0.32em;\n"
     "    text-shadow: 0 1px 4px rgba(0,0,0,.9);\n"
     "    pointer-events: none;\n"
     "  }"
 )
 if old_css in h:
     h = h.replace(old_css, new_css, 1)
+
+h = h.replace(
+    """    margin-right: 0.32em;
+    text-shadow: 0 1px 4px rgba(0,0,0,.9);
+    pointer-events: none;
+  }""",
+    """    position: absolute;
+    top: 50%;
+    transform: translate(-1.05em, -50%);
+    text-shadow: 0 1px 4px rgba(0,0,0,.9);
+    pointer-events: none;
+  }""",
+)
 
 if "-webkit-tap-highlight-color" not in h:
     h = h.replace(
@@ -64,12 +90,22 @@ nth = re.search(
 )
 if nth:
     n = len(TROPES)
-    start, end = 20.6, 84.2
+    start, end = 19.50, 85.70
     step = (end - start) / (n - 1)
     block = "".join(
         f"  .trope-hit:nth-child({i+1}) {{ top: {start + i * step:.2f}%; }}\n" for i in range(n)
     )
     h = h[: nth.start()] + block + h[nth.end() :]
+
+# per-line check x
+h = re.sub(r"  \.trope-hit:nth-child\(\d+\)\.on::before \{ left: [0-9.]+%; \}\n", "", h)
+cks = "".join(
+    f"  .trope-hit:nth-child({i+1}).on::before {{ left: {LEFTS[i]:.2f}%; }}\n"
+    for i in range(len(TROPES))
+)
+anchor = "  .trope-next {"
+if cks.strip() and anchor in h:
+    h = h.replace(anchor, cks + anchor, 1)
 
 hits = re.search(
     r'<div class="trope-hits" id="tropeHits" aria-label="Choose tropes">.*?</div>',
@@ -167,8 +203,10 @@ new_play = "if (v) { try { v.currentTime = 0; v.muted = false; v.play().catch(()
 if old_play in h:
     h = h.replace(old_play, new_play, 1)
 
-if "ML_captor" not in h or "TROPES_AT = 10.17" not in h:
+if "ML_captor" not in h or "TROPES_AT = 11.05" not in h:
     raise SystemExit("pause timestamp or tropes failed")
+if ".trope-hit:nth-child(17).on::before" not in h:
+    raise SystemExit("check x failed")
 
 p.write_text(h)
-print("patched tropes + pause 10.17")
+print("patched tropes + 17 check anchors + pause 11.05")
