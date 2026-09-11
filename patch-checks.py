@@ -62,5 +62,21 @@ if old_click in h:
 if "syncTropeNext" not in h:
     raise SystemExit("failed to insert Next gate")
 
+old_no = "I felt your heart flutter on the first (' + (first || 'mismatch') + '). Trust me"
+new_no = "I felt your heart flutter when you clicked it. But you are nervous so this door is not opening for you. Trust me"
+if old_no in h:
+    h = h.replace(old_no, new_no, 1)
+
+old_end = "I won\u2019t bait you in.';"
+new_end = "I won\u2019t bait you in. unless you bait me with your eyes closed in the shower. yeah yeah';"
+if old_end in h and "eyes closed in the shower" not in h:
+    h = h.replace(old_end, new_end, 1)
+old_end2 = "I won't bait you in.';"
+if old_end2 in h and "eyes closed in the shower" not in h:
+    h = h.replace(old_end2, new_end, 1)
+
+if "eyes closed in the shower" not in h:
+    raise SystemExit("failed to insert runaway closer")
+
 p.write_text(h)
-print("patched checks + next gate")
+print("patched checks + next gate + runaway copy")
