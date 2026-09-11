@@ -21,8 +21,7 @@ jobs:
       - name: Unpack site
         run: |
           unzip -o enduring-pages.zip
-          ls -la enduring-pages
-          ls -la enduring-pages/assets
+          if [ -f door.html ]; then cp -f door.html enduring-pages/door.html; fi
       - uses: actions/configure-pages@v5
         with:
           enablement: true
