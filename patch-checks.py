@@ -1,3 +1,9 @@
+#!/usr/bin/env python3
+"""Align 17 trope hit-boxes to printed ink on book-open.mp4 @ 11.05s.
+
+Check sits one space before the first letter. Click target is the printed line.
+Video and overlay share the same 9:16 .stage box.
+"""
 from pathlib import Path
 import re
 
@@ -8,11 +14,11 @@ TROPES = [
     ("ML_wings", "Learn Me Agony- Don't do that again", "learn me agony"),
     ("ML_enemies", "Enemies to Lovers to *Enemies*", "enemies to lovers to enemies"),
     ("ML_hefalls", "He. Falls. First", "he falls first"),
-    ("ML_touch", "T\u00f8uch Her and D!E", "touch her and die"),
+    ("ML_touch", "Tøuch Her and D!E", "touch her and die"),
     ("ML_fated", "Fated Mates", "fated mates"),
     ("ML_academia", "Academia / Battle Setting", "academia / battle setting"),
     ("ML_slowburn", "Slow BURN", "slow burn"),
-    ("ML_captor", "C\u01c3ptor/ Capt!ve", "captor / captive"),
+    ("ML_captor", "Cǃptor/ Capt!ve", "captor / captive"),
     ("ML_mortal", "Mortal / Immortal", "mortal / immortal"),
     ("ML_harem", "Reverse Harem- Beg Me", "reverse harem"),
     ("ML_forbidden", "Forbidden Feelings", "forbidden feelings"),
@@ -20,27 +26,28 @@ TROPES = [
     ("ML_dom", "Dom/Sub-Brat Heat", "Dom / brat heat"),
     ("ML_meta", "Fourth Wall Seduction (I'm talking to you)", "fourth wall seduction"),
 ]
-# top, first-letter x, last-letter x as % of the 9:16 video frame at 11.05s
+# top = vertical center of ink, first = left edge of first letter,
+# last = right edge of last letter. Percent of 720x1280 frame at 11.05s.
+# First-letter X taken from red ticks on tropes-firstletter-1105.jpg.
 LINES = [
-    (13.55, 24.7, 68.5),
-    (19.30, 20.9, 75.8),
-    (24.22, 32.2, 63.6),
-    (29.30, 17.9, 81.7),
-    (33.91, 19.2, 81.0),
-    (37.73, 31.1, 63.8),
-    (42.50, 25.4, 69.6),
-    (47.03, 33.9, 61.8),
-    (52.27, 22.1, 73.5),
-    (56.48, 33.1, 62.2),
-    (61.17, 28.6, 66.1),
-    (65.70, 28.5, 66.8),
-    (70.23, 22.9, 73.2),
-    (74.77, 28.3, 65.8),
-    (79.53, 20.3, 72.6),
-    (83.75, 26.0, 68.9),
-    (87.55, 24.5, 72.0),
+    (13.91, 24.31, 70.80),
+    (19.02, 20.28, 76.00),
+    (24.02, 31.67, 63.80),
+    (28.83, 14.58, 82.00),
+    (33.40, 15.56, 81.20),
+    (37.77, 30.69, 64.00),
+    (42.38, 25.00, 70.00),
+    (46.99, 33.61, 62.20),
+    (51.76, 21.94, 73.60),
+    (56.37, 32.22, 62.60),
+    (61.17, 28.06, 66.30),
+    (65.27, 27.92, 67.00),
+    (69.77, 22.36, 73.20),
+    (74.34, 27.78, 66.00),
+    (79.06, 20.00, 74.60),
+    (83.40, 25.69, 69.20),
+    (87.77, 24.44, 72.20),
 ]
-PAD = 3.15
 CORES = ["ML_demon", "ML_enemies", "ML_hefalls"]
 FLAVOR = [k for k, _, __ in TROPES if k not in CORES]
 
@@ -49,31 +56,14 @@ h = p.read_text()
 
 h = h.replace("const TROPES_AT = 13.15;", "const TROPES_AT = 11.05;")
 h = h.replace("const TROPES_AT = 10.17;", "const TROPES_AT = 11.05;")
-h = h.replace("bottom: 6%;", "bottom: 2.2%;")
 h = h.replace(
     '          <source src="https://enduring-timeline.netlify.app/assets/book-open.mp4" type="video/mp4">\n',
     "",
 )
 
-h = h.replace("object-fit: cover;", "object-fit: contain;")
-
-if ".stage {" not in h:
-    h = h.replace(
-        """  .hero video {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    background: #000;
-  }""",
-        """  .hero video {
-    display: block;
+NEW_OVERLAY_CSS = """  .hero {
     position: absolute;
     inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    object-position: center;
     background: #000;
   }
   .stage {
@@ -84,128 +74,139 @@ if ".stage {" not in h:
     height: min(100dvh, calc(100vw * 16 / 9));
     transform: translate(-50%, -50%);
     z-index: 3;
-    pointer-events: none;
+    overflow: visible;
   }
-  .stage .trope-hits.on,
-  .stage .yes-btn.on,
-  .stage .trope-next.on { pointer-events: auto; }""",
-        1,
+  .stage video,
+  .hero video {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    background: #000;
+  }
+  .hero video.laugh { display: none; z-index: 2; }
+  .hero video.laugh.on { display: block; }
+  .trope-hits {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 4;
+    overflow: visible;
+  }
+  .trope-hits.on { opacity: 1; pointer-events: auto; }
+  .trope-hit {
+    appearance: none;
+    position: absolute;
+    height: 5.05%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    display: block;
+    transform: translateY(-50%);
+    overflow: visible;
+    -webkit-tap-highlight-color: transparent;
+    z-index: 4;
+  }
+  .trope-hit:nth-child(17) { height: 6.35%; }
+  .trope-hit:active,
+  .trope-hit.on {
+    background: rgba(226,195,122,.14);
+  }
+"""
+for i, (top, first, last) in enumerate(LINES, start=1):
+    width = max(18.0, (last - first) + 1.4)
+    NEW_OVERLAY_CSS += (
+        f"  .trope-hit:nth-child({i}) {{ "
+        f"top: {top:.2f}%; left: {first:.2f}%; width: {width:.2f}%; }}\n"
     )
 
+NEW_OVERLAY_CSS += """  .trope-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .trope-hit.on::before {
+    content: \"✓\";
+    position: absolute;
+    right: 100%;
+    margin-right: 0.62em;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #e2c37a;
+    font-size: clamp(15px, 3.6vw, 20px);
+    font-weight: 700;
+    line-height: 1;
+    text-shadow: 0 1px 4px rgba(0,0,0,.95);
+  }
+  .trope-next {
+    position: absolute; left: 50%; bottom: 2.2%;
+    transform: translateX(-50%);
+    opacity: 0; pointer-events: none;
+    z-index: 5;
+    background: transparent; color: #c9a36a;
+    border: 1px solid #c9a36a;
+    padding: 8px 26px;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    font-size: 11px;
+    font-family: \"Iowan Old Style\", Palatino, Georgia, serif;
+  }
+  .trope-next.on { opacity: 1; pointer-events: auto; }
+"""
+
+m = re.search(
+    r"  \.hero \{.*?\n  \.trope-next\.on \{ opacity: 1; pointer-events: auto; \}\n",
+    h,
+    re.S,
+)
+if not m:
+    raise SystemExit("hero/trope css block not found")
+h = h[: m.start()] + NEW_OVERLAY_CSS + h[m.end() :]
+
+# Strip leftover cover + laptop media query if the replace left any.
 h = re.sub(
-    r"  @media \(min-aspect-ratio: 3/4\) \{.*?\n  \}\n",
+    r"  @media \(min-aspect-ratio: 3/4\) \{.*?\.hero video \{ object-fit: contain; \}\n  \}\n",
     "",
     h,
     count=1,
     flags=re.S,
 )
+h = h.replace("object-fit: cover;", "object-fit: contain;")
 
-if 'id="doorStage"' not in h:
-    h = h.replace(
-        '<div class="trope-hits" id="tropeHits" aria-label="Choose tropes">',
-        '<div class="stage" id="doorStage">\n        <div class="trope-hits" id="tropeHits" aria-label="Choose tropes">',
-        1,
-    )
-    h = h.replace(
-        """        <button type="button" class="trope-next" id="tropeNext">Next</button>
-        <button type="button" id="start" class="yes-btn">Yes</button>""",
-        """        <button type="button" class="trope-next" id="tropeNext">Next</button>
+btns = "\n".join(
+    f'          <button type="button" class="trope-hit" data-q1="{k}" aria-label="{lab.replace("*", "")}"><span class="trope-label">{lab}</span></button>'
+    for k, lab, _ in TROPES
+)
+NEW_HERO = f'''      <div class="hero">
+        <div class="stage" id="doorStage">
+        <video id="doorZoom" muted playsinline preload="auto" poster="assets/book-open-freeze.jpg" aria-label="Enduring — can you endure me?">
+          <source src="assets/book-open.mp4" type="video/mp4">
+        </video>
+        <div class="trope-hits" id="tropeHits" aria-label="Choose tropes">
+{btns}
+        </div>
+        <button type="button" class="trope-next" id="tropeNext">Next</button>
         <button type="button" id="start" class="yes-btn">Yes</button>
-        </div>""",
-        1,
-    )
+        </div>
+      </div>'''
 
-old_css = """  .trope-hit.on .trope-label {
-    color: #070707;
-    font-weight: 600;
-    text-shadow: 0 0 1px #000;
-  }"""
-new_css = (
-    "  .trope-hit.on::before {\n"
-    "    content: \"" + "\u2713" + "\";\n"
-    "    position: absolute;\n"
-    "    left: 0.08em;\n"
-    "    top: 50%;\n"
-    "    transform: translateY(-50%);\n"
-    "    color: #e2c37a;\n"
-    "    font-size: clamp(14px, 3.4vw, 18px);\n"
-    "    font-weight: 700;\n"
-    "    line-height: 1;\n"
-    "    text-shadow: 0 1px 4px rgba(0,0,0,.95);\n"
-    "    pointer-events: none;\n"
-    "  }"
-)
-if old_css in h:
-    h = h.replace(old_css, new_css, 1)
-
-h = h.replace("transform: translate(-1.05em, -50%);", "transform: translateY(-50%);")
-if "left: 0.08em;" not in h:
-    h = h.replace(
-        "  .trope-hit.on::before {\n    content:",
-        "  .trope-hit.on::before {\n    left: 0.08em;\n    content:",
-        1,
-    )
-
-h = re.sub(
-    r"  \.trope-hit \{.*?\n  \}",
-    "  .trope-hit {\n"
-    "    appearance: none;\n"
-    "    position: absolute;\n"
-    "    height: 3.95%;\n"
-    "    margin: 0;\n"
-    "    padding: 0;\n"
-    "    border: 0;\n"
-    "    background: transparent;\n"
-    "    cursor: pointer;\n"
-    "    display: block;\n"
-    "    transform: translateY(-50%);\n"
-    "    -webkit-tap-highlight-color: transparent;\n"
-    "  }",
-    h,
-    count=1,
-    flags=re.S,
-)
-
-if ".trope-hit:active" not in h:
-    h = h.replace(
-        "    -webkit-tap-highlight-color: transparent;\n  }",
-        "    -webkit-tap-highlight-color: transparent;\n  }\n"
-        "  .trope-hit:active,\n  .trope-hit.on {\n"
-        "    background: rgba(226,195,122,.10);\n"
-        "  }",
-        1,
-    )
-
-h = re.sub(r"  \.trope-hit:nth-child\(\d+\) \{[^}]+\}\n", "", h)
-h = re.sub(r"  \.trope-hit:nth-child\(\d+\)\.on::before \{[^}]+\}\n", "", h)
-
-block = []
-for i, (top, first, last) in enumerate(LINES, 1):
-    left = first - PAD
-    width = (last - first) + PAD + 2.2
-    block.append(
-        f"  .trope-hit:nth-child({i}) {{ top: {top:.2f}%; left: {left:.2f}%; width: {width:.2f}%; }}\n"
-    )
-block = "".join(block)
-if "  .trope-label {" not in h:
-    raise SystemExit("no trope-label")
-h = h.replace("  .trope-label {", block + "  .trope-label {", 1)
-
-hits = re.search(
-    r'<div class="trope-hits" id="tropeHits" aria-label="Choose tropes">.*?</div>',
-    h,
-    re.S,
-)
-if hits:
-    btns = "\n".join(
-        f'          <button type="button" class="trope-hit" data-q1="{k}" aria-label="{lab.replace("*", "")}"><span class="trope-label">{lab}</span></button>'
-        for k, lab, _ in TROPES
-    )
-    h = (
-        h[: hits.start()]
-        + f'<div class="trope-hits" id="tropeHits" aria-label="Choose tropes">\n{btns}\n        </div>'
-        + h[hits.end() :]
-    )
+m = re.search(r'      <div class="hero">.*?</div>\n      </div>', h, re.S)
+if not m:
+    m = re.search(r'      <div class="hero">.*?<button type="button" id="start" class="yes-btn">Yes</button>\s*</div>\s*</div>', h, re.S)
+if not m:
+    raise SystemExit("hero html block not found")
+h = h[: m.start()] + NEW_HERO + h[m.end() :]
 
 lab = re.search(r"const Q1_LABEL = \{.*?\};", h, re.S)
 if lab:
@@ -237,13 +238,14 @@ new_show = """      document.getElementById('tropeHits').classList.add('on');
 if old_show in h:
     h = h.replace(old_show, new_show, 1)
 
-old_click = """document.querySelectorAll('.trope-hit, #s1 .ink').forEach(btn => {
+if "function syncTropeNext()" not in h:
+    old_click = """document.querySelectorAll('.trope-hit, #s1 .ink').forEach(btn => {
   btn.addEventListener('click', () => {
     btn.classList.toggle('on');
     syncQ1(btn.dataset.q1);
   });
 });"""
-new_click = """function syncTropeNext() {
+    new_click = """function syncTropeNext() {
   const n = document.querySelectorAll('.trope-hit.on').length;
   document.getElementById('tropeNext').classList.toggle('on', n >= 3);
 }
@@ -254,8 +256,8 @@ document.querySelectorAll('.trope-hit, #s1 .ink').forEach(btn => {
     syncTropeNext();
   });
 });"""
-if old_click in h:
-    h = h.replace(old_click, new_click, 1)
+    if old_click in h:
+        h = h.replace(old_click, new_click, 1)
 
 if "syncTropeNext" not in h:
     raise SystemExit("failed to insert Next gate")
@@ -265,8 +267,8 @@ new_no = "I felt your heart flutter when you clicked it. But you are nervous so 
 if old_no in h:
     h = h.replace(old_no, new_no, 1)
 
-old_end = "I won\u2019t bait you in.';"
-new_end = "I won\u2019t bait you in. unless you bait me with your eyes closed in the shower.';"
+old_end = "I won’t bait you in.';"
+new_end = "I won’t bait you in. unless you bait me with your eyes closed in the shower.';"
 if old_end in h and "eyes closed in the shower" not in h:
     h = h.replace(old_end, new_end, 1)
 old_end2 = "I won't bait you in.';"
@@ -287,10 +289,30 @@ new_play = "if (v) { try { v.currentTime = 0; v.muted = false; v.play().catch(()
 if old_play in h:
     h = h.replace(old_play, new_play, 1)
 
-if "top: 13.55%" not in h or "top: 87.55%" not in h:
-    raise SystemExit("ink geometry failed")
-if 'id="doorStage"' not in h:
-    raise SystemExit("stage missing")
+checks = [
+    "top: 13.91%",
+    "top: 87.77%",
+    "left: 24.31%",
+    "left: 14.58%",
+    "left: 15.56%",
+    'id="doorStage"',
+    "right: 100%",
+    "margin-right: 0.62em",
+    "TROPES_AT = 11.05",
+]
+for c in checks:
+    if c not in h:
+        raise SystemExit(f"missing {c}")
+if h.count(".trope-hit:nth-child") < 17:
+    raise SystemExit("expected 17 line rules")
+if "object-fit: cover" in h:
+    raise SystemExit("cover leaked")
+if h.count('class="trope-hit"') != 17:
+    raise SystemExit(f"expected 17 buttons, got {h.count('class=\"trope-hit\"')}")
 
 p.write_text(h)
-print("patched ink-aligned 17 hits")
+print("patched: video-in-stage, check hangs one space before first letter")
+print("line1", "top: 13.91%; left: 24.31%" in h)
+print("learnme", "left: 14.58%" in h)
+print("enemies", "left: 15.56%" in h)
+print("fourth", "top: 87.77%" in h)
