@@ -68,12 +68,15 @@ if old_no in h:
     h = h.replace(old_no, new_no, 1)
 
 old_end = "I won\u2019t bait you in.';"
-new_end = "I won\u2019t bait you in. unless you bait me with your eyes closed in the shower. yeah yeah';"
+new_end = "I won\u2019t bait you in. unless you bait me with your eyes closed in the shower.';"
 if old_end in h and "eyes closed in the shower" not in h:
     h = h.replace(old_end, new_end, 1)
 old_end2 = "I won't bait you in.';"
 if old_end2 in h and "eyes closed in the shower" not in h:
     h = h.replace(old_end2, new_end, 1)
+
+h = h.replace(" shower. yeah yeah", " shower.")
+h = h.replace(" yeah yeah", "")
 
 if "eyes closed in the shower" not in h:
     raise SystemExit("failed to insert runaway closer")
