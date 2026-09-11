@@ -1,9 +1,33 @@
 from pathlib import Path
+import re
+
+TROPES = [
+    ("ML_demon", "Morally Dark MMC", "morally dark MMC"),
+    ("ML_prox", "Forced Proximity- One Bed", "forced proximity / one bed"),
+    ("ML_medical", "Medical K!nk", "medical kink"),
+    ("ML_wings", "Learn Me Agony- Don't do that again", "learn me agony"),
+    ("ML_enemies", "Enemies to Lovers to *Enemies*", "enemies to lovers to enemies"),
+    ("ML_hefalls", "He. Falls. First", "he falls first"),
+    ("ML_touch", "T\u00f8uch Her and D!E", "touch her and die"),
+    ("ML_fated", "Fated Mates", "fated mates"),
+    ("ML_academia", "Academia / Battle Setting", "academia / battle setting"),
+    ("ML_slowburn", "Slow BURN", "slow burn"),
+    ("ML_captor", "C\u01c3ptor/ Capt!ve", "captor / captive"),
+    ("ML_mortal", "Mortal / Immortal", "mortal / immortal"),
+    ("ML_harem", "Reverse Harem- Beg Me", "reverse harem"),
+    ("ML_forbidden", "Forbidden Feelings", "forbidden feelings"),
+    ("ML_possessive", "Possessive/ Protective MMC", "possessive / protective MMC"),
+    ("ML_dom", "Dom/Sub-Brat Heat", "Dom / brat heat"),
+    ("ML_meta", "Fourth Wall Seduction (I'm talking to you)", "fourth wall seduction"),
+]
+CORES = ["ML_demon", "ML_enemies", "ML_hefalls"]
+FLAVOR = [k for k, _, __ in TROPES if k not in CORES]
 
 p = Path("enduring-pages/door.html")
 h = p.read_text()
 
-h = h.replace("height: 3.6%;", "height: 4.4%;", 1)
+h = h.replace("height: 3.6%;", "height: 3.7%;", 1)
+h = h.replace("height: 4.4%;", "height: 3.7%;", 1)
 
 old_css = """  .trope-hit.on .trope-label {
     color: #070707;
@@ -31,6 +55,59 @@ if "-webkit-tap-highlight-color" not in h:
         "transform: translateY(-50%);\n    -webkit-tap-highlight-color: transparent;",
         1,
     )
+
+nth = re.search(
+    r"  \.trope-hit:nth-child\(1\) \{ top: [0-9.]+%; \}.*?  \.trope-hit:nth-child\(\d+\) \{ top: [0-9.]+%; \}\n",
+    h,
+    re.S,
+)
+if nth:
+    n = len(TROPES)
+    start, end = 20.6, 84.2
+    step = (end - start) / (n - 1)
+    block = "".join(
+        f"  .trope-hit:nth-child({i+1}) {{ top: {start + i * step:.2f}%; }}\n" for i in range(n)
+    )
+    h = h[: nth.start()] + block + h[nth.end() :]
+
+hits = re.search(
+    r'<div class="trope-hits" id="tropeHits" aria-label="Choose tropes">.*?</div>',
+    h,
+    re.S,
+)
+if hits:
+    btns = "\n".join(
+        f'          <button type="button" class="trope-hit" data-q1="{k}" aria-label="{lab.replace("*", "")}"><span class="trope-label">{lab}</span></button>'
+        for k, lab, _ in TROPES
+    )
+    h = (
+        h[: hits.start()]
+        + f'<div class="trope-hits" id="tropeHits" aria-label="Choose tropes">\n{btns}\n        </div>'
+        + h[hits.end() :]
+    )
+
+lab = re.search(r"const Q1_LABEL = \{.*?\};", h, re.S)
+if lab:
+    body = ",\n".join(f"  {k}: {v!r}" for k, _, v in TROPES)
+    h = h[: lab.start()] + "const Q1_LABEL = {\n" + body + "\n};" + h[lab.end() :]
+
+sr = re.search(r'<div class="sr-q1" aria-hidden="true">.*?</div>', h, re.S)
+if sr:
+    boxes = "\n".join(f'      <input type="checkbox" data-q1="{k}">' for k, _, __ in TROPES)
+    h = (
+        h[: sr.start()]
+        + f'<div class="sr-q1" aria-hidden="true">\n{boxes}\n    </div>'
+        + h[sr.end() :]
+    )
+
+h = re.sub(
+    r"const flavor = \[[^\]]+\]\.filter\(k => state\.q1\[k\]\)\.map\(k => Q1_LABEL\[k\]\);",
+    "const flavor = ["
+    + ",".join(repr(k) for k in FLAVOR)
+    + "].filter(k => state.q1[k]).map(k => Q1_LABEL[k]);",
+    h,
+    count=1,
+)
 
 old_show = """      document.getElementById('tropeHits').classList.add('on');
       document.getElementById('tropeNext').classList.add('on');"""
@@ -89,8 +166,8 @@ new_play = "if (v) { try { v.currentTime = 0; v.muted = false; v.play().catch(()
 if old_play in h:
     h = h.replace(old_play, new_play, 1)
 
-if "eyes closed in the shower" not in h:
-    raise SystemExit("failed to insert runaway closer")
+if "ML_captor" not in h or "Fourth Wall Seduction" not in h:
+    raise SystemExit("trope rebuild failed")
 
 p.write_text(h)
-print("patched checks + next gate + runaway copy + laugh clip")
+print("patched tropes + checks + gates")
