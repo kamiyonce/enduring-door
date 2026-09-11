@@ -24,6 +24,8 @@ jobs:
           ls -la enduring-pages
           ls -la enduring-pages/assets
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: enduring-pages
