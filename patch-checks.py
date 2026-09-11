@@ -79,8 +79,18 @@ h = h.replace(" shower. yeah yeah", " shower.")
 h = h.replace(" yeah yeah", "")
 h = h.replace("-Menace who Kneels", "Menace who Kneels")
 
+old_vid = '<video class="door-open-vid" id="doorOpenVid" src="assets/door-open.mp4" playsinline muted autoplay controls loop preload="auto" aria-label="The door opens"></video>'
+new_vid = '<video class="door-open-vid" id="doorOpenVid" src="assets/door-open.mp4" poster="assets/door-open-poster.jpg" playsinline autoplay loop preload="auto" aria-label="The door opens"></video>'
+if old_vid in h:
+    h = h.replace(old_vid, new_vid, 1)
+
+old_play = "if (v) { try { v.currentTime = 0; v.muted = true; v.play(); } catch (e) {} }"
+new_play = "if (v) { try { v.currentTime = 0; v.muted = false; v.play().catch(() => { v.muted = true; v.play(); }); } catch (e) {} }"
+if old_play in h:
+    h = h.replace(old_play, new_play, 1)
+
 if "eyes closed in the shower" not in h:
     raise SystemExit("failed to insert runaway closer")
 
 p.write_text(h)
-print("patched checks + next gate + runaway copy")
+print("patched checks + next gate + runaway copy + laugh clip")
