@@ -20,20 +20,23 @@ TROPES = [
     ("ML_dom", "Dom/Sub-Brat Heat", "Dom / brat heat"),
     ("ML_meta", "Fourth Wall Seduction (I'm talking to you)", "fourth wall seduction"),
 ]
-LEFTS = [21.0,16.2,32.2,15.1,16.3,31.3,25.4,34.2,22.2,33.9,28.6,28.5,23.1,28.3,20.6,26.4,26.4]
+LEFTS = [22.4,23.6,32.4,16.0,17.2,28.6,26.0,33.4,22.4,32.2,28.8,28.2,23.2,27.8,20.4,26.2,24.6]
 CORES = ["ML_demon", "ML_enemies", "ML_hefalls"]
 FLAVOR = [k for k, _, __ in TROPES if k not in CORES]
 
 p = Path("enduring-pages/door.html")
 h = p.read_text()
 
-h = h.replace("height: 3.6%;", "height: 4.15%;", 1)
-h = h.replace("height: 4.4%;", "height: 4.15%;", 1)
-h = h.replace("height: 3.7%;", "height: 4.15%;", 1)
+h = h.replace("height: 3.6%;", "height: 4.45%;")
+h = h.replace("height: 4.4%;", "height: 4.45%;")
+h = h.replace("height: 3.7%;", "height: 4.45%;")
+h = h.replace("height: 4.15%;", "height: 4.45%;")
 h = h.replace("const TROPES_AT = 13.15;", "const TROPES_AT = 11.05;")
 h = h.replace("const TROPES_AT = 10.17;", "const TROPES_AT = 11.05;")
-h = h.replace("left: 11%;", "left: 8%;")
-h = h.replace("right: 11%;", "right: 8%;")
+h = h.replace("left: 11%;", "left: 6%;")
+h = h.replace("left: 8%;", "left: 6%;")
+h = h.replace("right: 11%;", "right: 6%;")
+h = h.replace("right: 8%;", "right: 6%;")
 h = h.replace("justify-content: center;", "justify-content: flex-start;")
 h = h.replace("bottom: 6%;", "bottom: 2.2%;")
 h = h.replace(
@@ -83,29 +86,37 @@ if "-webkit-tap-highlight-color" not in h:
         1,
     )
 
-nth = re.search(
-    r"  \.trope-hit:nth-child\(1\) \{ top: [0-9.]+%; \}.*?  \.trope-hit:nth-child\(\d+\) \{ top: [0-9.]+%; \}\n",
-    h,
-    re.S,
-)
-if nth:
-    n = len(TROPES)
-    start, end = 19.50, 85.70
-    step = (end - start) / (n - 1)
-    block = "".join(
-        f"  .trope-hit:nth-child({i+1}) {{ top: {start + i * step:.2f}%; }}\n" for i in range(n)
+if ".trope-hit:active" not in h:
+    h = h.replace(
+        "    -webkit-tap-highlight-color: transparent;\n  }",
+        "    -webkit-tap-highlight-color: transparent;\n  }\n"
+        "  .trope-hit:active,\n  .trope-hit.on {\n"
+        "    background: rgba(226,195,122,.10);\n"
+        "  }",
+        1,
     )
-    h = h[: nth.start()] + block + h[nth.end() :]
 
-# per-line check x
+# wipe every per-line rule so leftover 14-line CSS cannot win
+h = re.sub(r"  \.trope-hit:nth-child\(\d+\) \{ top: [0-9.]+%; \}\n", "", h)
 h = re.sub(r"  \.trope-hit:nth-child\(\d+\)\.on::before \{ left: [0-9.]+%; \}\n", "", h)
+
+n = len(TROPES)
+start, end = 15.55, 86.20
+step = (end - start) / (n - 1)
+block = "".join(
+    f"  .trope-hit:nth-child({i+1}) {{ top: {start + i * step:.2f}%; }}\n" for i in range(n)
+)
+if "  .trope-label {" not in h:
+    raise SystemExit("no trope-label")
+h = h.replace("  .trope-label {", block + "  .trope-label {", 1)
+
 cks = "".join(
     f"  .trope-hit:nth-child({i+1}).on::before {{ left: {LEFTS[i]:.2f}%; }}\n"
-    for i in range(len(TROPES))
+    for i in range(n)
 )
-anchor = "  .trope-next {"
-if cks.strip() and anchor in h:
-    h = h.replace(anchor, cks + anchor, 1)
+if "  .trope-next {" not in h:
+    raise SystemExit("no trope-next")
+h = h.replace("  .trope-next {", cks + "  .trope-next {", 1)
 
 hits = re.search(
     r'<div class="trope-hits" id="tropeHits" aria-label="Choose tropes">.*?</div>',
@@ -203,10 +214,10 @@ new_play = "if (v) { try { v.currentTime = 0; v.muted = false; v.play().catch(()
 if old_play in h:
     h = h.replace(old_play, new_play, 1)
 
-if "ML_captor" not in h or "TROPES_AT = 11.05" not in h:
-    raise SystemExit("pause timestamp or tropes failed")
-if ".trope-hit:nth-child(17).on::before" not in h:
-    raise SystemExit("check x failed")
+if "top: 15.55%" not in h or "top: 86.20%" not in h:
+    raise SystemExit("MMC/Fourth Wall tops failed")
+if h.count(".trope-hit:nth-child") < 34:
+    raise SystemExit("expected 17 tops + 17 check xs")
 
 p.write_text(h)
-print("patched tropes + 17 check anchors + pause 11.05")
+print("patched MMC-to-Fourth-Wall taps")
