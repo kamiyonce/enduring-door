@@ -18,10 +18,37 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Unpack site
+      - name: Unpack and patch checks
         run: |
           unzip -o enduring-pages.zip
-          if [ -f door.html ]; then cp -f door.html enduring-pages/door.html; fi
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('enduring-pages/door.html')
+          h = p.read_text()
+          h = h.replace('height: 3.6%;', 'height: 4.4%;', 1)
+          old = '''  .trope-hit.on .trope-label {
+    color: #070707;
+    font-weight: 600;
+    text-shadow: 0 0 1px #000;
+  }'''
+          new = '''  .trope-hit.on::before {
+    content: "\2713";
+    color: #e2c37a;
+    font-size: clamp(13px, 3.2vw, 17px);
+    font-weight: 700;
+    line-height: 1;
+    margin-right: 0.32em;
+    text-shadow: 0 1px 4px rgba(0,0,0,.9);
+    pointer-events: none;
+  }'''
+          if old not in h:
+              raise SystemExit('expected black-text CSS missing')
+          h = h.replace(old, new, 1)
+          if '-webkit-tap-highlight-color' not in h:
+              h = h.replace('transform: translateY(-50%);', 'transform: translateY(-50%);\n    -webkit-tap-highlight-color: transparent;', 1)
+          p.write_text(h)
+          print('patched checks')
+          PY
       - uses: actions/configure-pages@v5
         with:
           enablement: true
