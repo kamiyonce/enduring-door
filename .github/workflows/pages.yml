@@ -18,9 +18,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Unpack site
+        run: |
+          unzip -o enduring-pages.zip
+          ls -la enduring-pages
+          ls -la enduring-pages/assets
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: enduring-pages
       - id: deployment
         uses: actions/deploy-pages@v4
