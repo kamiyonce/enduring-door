@@ -3,6 +3,7 @@
 
 Check sits one space before the first letter. Click target is the printed line.
 Video and overlay share the same 9:16 .stage box.
+Next isolates selected tropes and darkens the rest on the 11.05 freeze.
 """
 from pathlib import Path
 import re
@@ -28,7 +29,6 @@ TROPES = [
 ]
 # top = vertical center of ink, first = left edge of first letter,
 # last = right edge of last letter. Percent of 720x1280 frame at 11.05s.
-# First-letter X taken from red ticks on tropes-firstletter-1105.jpg.
 LINES = [
     (13.91, 24.31, 70.80),
     (19.02, 20.28, 76.00),
@@ -89,6 +89,24 @@ NEW_OVERLAY_CSS = """  .hero {
   }
   .hero video.laugh { display: none; z-index: 2; }
   .hero video.laugh.on { display: block; }
+  .isolate-veil {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 3;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .55s ease;
+  }
+  .stage.isolated .isolate-veil { opacity: 1; }
+  .stage.isolated .trope-hits { pointer-events: none; }
+  .stage.isolated .trope-hit:not(.on) { opacity: 0; }
+  .stage.isolated .trope-hit.on {
+    z-index: 6;
+    background: rgba(226,195,122,.10);
+  }
+  .stage.isolated .trope-next { opacity: 0 !important; pointer-events: none !important; }
   .trope-hits {
     position: absolute;
     inset: 0;
@@ -137,7 +155,7 @@ NEW_OVERLAY_CSS += """  .trope-label {
     pointer-events: none;
   }
   .trope-hit.on::before {
-    content: \"✓\";
+    content: \"\u2713\";
     position: absolute;
     right: 100%;
     margin-right: 0.62em;
@@ -166,7 +184,7 @@ NEW_OVERLAY_CSS += """  .trope-label {
 """
 
 m = re.search(
-    r"  \.hero \{.*?\n  \.trope-next\.on \{ opacity: 1; pointer-events: auto; \}\n",
+    r"  \\.hero \\{.*?\\n  \\.trope-next\\.on \\{ opacity: 1; pointer-events: auto; \\}\\n",
     h,
     re.S,
 )
@@ -174,9 +192,8 @@ if not m:
     raise SystemExit("hero/trope css block not found")
 h = h[: m.start()] + NEW_OVERLAY_CSS + h[m.end() :]
 
-# Strip leftover cover + laptop media query if the replace left any.
 h = re.sub(
-    r"  @media \(min-aspect-ratio: 3/4\) \{.*?\.hero video \{ object-fit: contain; \}\n  \}\n",
+    r"  @media \\(min-aspect-ratio: 3/4\\) \\{.*?\\.hero video \\{ object-fit: contain; \\}\\n  \\}\\n",
     "",
     h,
     count=1,
@@ -184,7 +201,15 @@ h = re.sub(
 )
 h = h.replace("object-fit: cover;", "object-fit: contain;")
 
-btns = "\n".join(
+h = re.sub(
+    r"\\n  \\.isolate-veil \\{.*?\\n  \\.stage\\.isolated \\.trope-next \\{[^}]+\\}\\n",
+    "\\n",
+    h,
+    count=1,
+    flags=re.S,
+)
+
+btns = "\\n".join(
     f'          <button type="button" class="trope-hit" data-q1="{k}" aria-label="{lab.replace("*", "")}"><span class="trope-label">{lab}</span></button>'
     for k, lab, _ in TROPES
 )
@@ -193,6 +218,7 @@ NEW_HERO = f'''      <div class="hero">
         <video id="doorZoom" muted playsinline preload="auto" poster="assets/book-open-freeze.jpg" aria-label="Enduring — can you endure me?">
           <source src="assets/book-open.mp4" type="video/mp4">
         </video>
+        <svg class="isolate-veil" id="isolateVeil" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path id="isolatePath" fill="rgba(0,0,0,.78)" fill-rule="evenodd"></path></svg>
         <div class="trope-hits" id="tropeHits" aria-label="Choose tropes">
 {btns}
         </div>
@@ -201,29 +227,29 @@ NEW_HERO = f'''      <div class="hero">
         </div>
       </div>'''
 
-m = re.search(r'      <div class="hero">.*?</div>\n      </div>', h, re.S)
+m = re.search(r'      <div class="hero">.*?</div>\\n      </div>', h, re.S)
 if not m:
-    m = re.search(r'      <div class="hero">.*?<button type="button" id="start" class="yes-btn">Yes</button>\s*</div>\s*</div>', h, re.S)
+    m = re.search(r'      <div class="hero">.*?<button type="button" id="start" class="yes-btn">Yes</button>\\s*</div>\\s*</div>', h, re.S)
 if not m:
     raise SystemExit("hero html block not found")
 h = h[: m.start()] + NEW_HERO + h[m.end() :]
 
-lab = re.search(r"const Q1_LABEL = \{.*?\};", h, re.S)
+lab = re.search(r"const Q1_LABEL = \\{.*?\\};", h, re.S)
 if lab:
-    body = ",\n".join(f"  {k}: {v!r}" for k, _, v in TROPES)
-    h = h[: lab.start()] + "const Q1_LABEL = {\n" + body + "\n};" + h[lab.end() :]
+    body = ",\\n".join(f"  {k}: {v!r}" for k, _, v in TROPES)
+    h = h[: lab.start()] + "const Q1_LABEL = {\\n" + body + "\\n};" + h[lab.end() :]
 
 sr = re.search(r'<div class="sr-q1" aria-hidden="true">.*?</div>', h, re.S)
 if sr:
-    boxes = "\n".join(f'      <input type="checkbox" data-q1="{k}">' for k, _, __ in TROPES)
+    boxes = "\\n".join(f'      <input type="checkbox" data-q1="{k}">' for k, _, __ in TROPES)
     h = (
         h[: sr.start()]
-        + f'<div class="sr-q1" aria-hidden="true">\n{boxes}\n    </div>'
+        + f'<div class="sr-q1" aria-hidden="true">\\n{boxes}\\n    </div>'
         + h[sr.end() :]
     )
 
 h = re.sub(
-    r"const flavor = \[[^\]]+\]\.filter\(k => state\.q1\[k\]\)\.map\(k => Q1_LABEL\[k\]\);",
+    r"const flavor = \\[ [^\\]]+\\]\\.filter\\(k => state\\.q1\\[k\\]\\)\\.map\\(k => Q1_LABEL\\[k\\]\\);",
     "const flavor = ["
     + ",".join(repr(k) for k in FLAVOR)
     + "].filter(k => state.q1[k]).map(k => Q1_LABEL[k]);",
@@ -258,6 +284,53 @@ document.querySelectorAll('.trope-hit, #s1 .ink').forEach(btn => {
 });"""
     if old_click in h:
         h = h.replace(old_click, new_click, 1)
+
+ISOLATE_JS = """function isolatePicks() {
+  const stage = document.getElementById('doorStage');
+  const path = document.getElementById('isolatePath');
+  const selected = [...document.querySelectorAll('.trope-hit.on')];
+  if (!stage || !path || !selected.length) return;
+  const sr = stage.getBoundingClientRect();
+  if (!sr.width || !sr.height) return;
+  const holes = selected.map(el => {
+    const r = el.getBoundingClientRect();
+    const padL = sr.width * 0.048;
+    const padR = sr.width * 0.012;
+    const padY = sr.height * 0.005;
+    const x = ((r.left - sr.left - padL) / sr.width) * 100;
+    const y = ((r.top - sr.top - padY) / sr.height) * 100;
+    const w = ((r.width + padL + padR) / sr.width) * 100;
+    const hgt = ((r.height + padY * 2) / sr.height) * 100;
+    return 'M' + x.toFixed(2) + ' ' + y.toFixed(2) + 'h' + w.toFixed(2) + 'v' + hgt.toFixed(2) + 'h' + (-w).toFixed(2) + 'z';
+  });
+  path.setAttribute('d', 'M0 0H100V100H0z ' + holes.join(' '));
+  stage.classList.add('isolated');
+  document.getElementById('tropeNext').classList.remove('on');
+}
+function refreshIsolate() {
+  const stage = document.getElementById('doorStage');
+  if (stage && stage.classList.contains('isolated')) isolatePicks();
+}
+window.addEventListener('resize', refreshIsolate);
+document.getElementById('tropeNext').onclick = () => {
+  isolatePicks();
+};"""
+
+h = re.sub(
+    r"function isolatePicks\\(\\) \\{.*?\\ndocument\\.getElementById\\('tropeNext'\\)\\.onclick = \\(\\) => \\{\\n  isolatePicks\\(\\);\\n\\};",
+    ISOLATE_JS,
+    h,
+    count=1,
+    flags=re.S,
+)
+old_next = """document.getElementById('tropeNext').onclick = () => {
+  document.body.classList.remove('landing-on');
+  show('s2');
+};"""
+if old_next in h:
+    h = h.replace(old_next, ISOLATE_JS, 1)
+if "function isolatePicks()" not in h:
+    raise SystemExit("failed to insert isolatePicks")
 
 if "syncTropeNext" not in h:
     raise SystemExit("failed to insert Next gate")
@@ -296,6 +369,8 @@ checks = [
     "left: 14.58%",
     "left: 15.56%",
     'id="doorStage"',
+    'id="isolateVeil"',
+    "function isolatePicks()",
     "right: 100%",
     "margin-right: 0.62em",
     "TROPES_AT = 11.05",
@@ -309,10 +384,11 @@ if "object-fit: cover" in h:
     raise SystemExit("cover leaked")
 if h.count('class="trope-hit"') != 17:
     raise SystemExit(f"expected 17 buttons, got {h.count('class=\"trope-hit\"')}")
+nxt = h.split("document.getElementById('tropeNext').onclick")[-1][:240]
+if "s2" in nxt:
+    raise SystemExit("Next still jumps to s2")
 
 p.write_text(h)
-print("patched: video-in-stage, check hangs one space before first letter")
+print("patched: isolate-on-Next + first-letter checks")
 print("line1", "top: 13.91%; left: 24.31%" in h)
-print("learnme", "left: 14.58%" in h)
-print("enemies", "left: 15.56%" in h)
-print("fourth", "top: 87.77%" in h)
+print("isolate", "isolatePicks" in h and "isolateVeil" in h)
