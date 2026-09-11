@@ -77,6 +77,7 @@ if old_end2 in h and "eyes closed in the shower" not in h:
 
 h = h.replace(" shower. yeah yeah", " shower.")
 h = h.replace(" yeah yeah", "")
+h = h.replace("-Menace who Kneels", "Menace who Kneels")
 
 if "eyes closed in the shower" not in h:
     raise SystemExit("failed to insert runaway closer")
