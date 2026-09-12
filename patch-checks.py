@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""17 first-letter checks + gold arrow between Fated Mates and the book buckle."""
+"""17 first-letter checks + Kami ornate Next arrow between Fated Mates and the buckle."""
 from pathlib import Path
+import base64
 
 DST = Path("enduring-pages/door.html")
 if not DST.exists():
@@ -102,48 +103,82 @@ if start < 0 or nxt <= start:
     raise SystemExit("overlay anchors missing")
 h = h[:start] + OVERLAY + h[nxt:]
 
-ARROW_BLOCK = """  .trope-next {
-    position: absolute; left: 70%; top: 46.99%; bottom: auto;
+b64p = Path("next-arrow.b64")
+if not b64p.exists():
+    raise SystemExit("next-arrow.b64 missing at repo root")
+asset = Path("enduring-pages/assets")
+asset.mkdir(parents=True, exist_ok=True)
+(asset / "next-arrow.png").write_bytes(base64.b64decode("".join(b64p.read_text().split())))
+
+NEXT_CSS = """  .trope-next {
+    position: absolute; left: 72%; top: 46.99%; bottom: auto;
     transform: translate(-50%, -50%);
     opacity: 0; pointer-events: none;
     z-index: 5;
     appearance: none;
-    background: transparent;
-    border: 0;
-    padding: 0;
+    box-sizing: content-box;
+    width: 13.4%;
+    min-width: 72px;
+    max-width: 110px;
+    height: 44px;
     margin: 0;
-    color: #e2c37a;
-    font-size: clamp(26px, 6.2vw, 34px);
-    line-height: 1;
-    font-weight: 700;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: transparent;
+    font-size: 0;
+    line-height: 0;
     letter-spacing: 0;
     text-transform: none;
-    font-family: Palatino, \"Iowan Old Style\", Georgia, serif;
-    text-shadow: 0 1px 4px rgba(0,0,0,.95);
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     -webkit-tap-highlight-color: transparent;
+  }
+  .trope-next img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 36px;
+    object-fit: contain;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,.9));
+  }
+  .trope-next:focus-visible {
+    outline: 1px solid #e2c37a;
+    outline-offset: 3px;
   }
 """
 a = h.find("  .trope-next {")
 b = h.find("  .trope-next.on {", a)
 if a < 0 or b <= a:
     raise SystemExit("next css missing")
-h = h[:a] + ARROW_BLOCK + h[b:]
+h = h[:a] + NEXT_CSS + h[b:]
 
-end_btn = "<" + "/button>"
-old_labels = [
+end_btn = "</button>"
+img = '<img src="assets/next-arrow.png" alt="" width="200" height="62" draggable="false">'
+old_next_btns = [
     'id="tropeNext">Next' + end_btn,
     'id="tropeNext" aria-label="Next">Next' + end_btn,
+    'id="tropeNext" aria-label="Next">\u279c' + end_btn,
+    'id="tropeNext" aria-label="Next">➜' + end_btn,
+    'id="tropeNext" aria-label="Next">' + end_btn,
 ]
-new_btn = 'id="tropeNext" aria-label="Next">\u279c' + end_btn
-found = False
-for old in old_labels:
+new_next_btn = 'id="tropeNext" aria-label="Next">' + img + end_btn
+found_btn = False
+for old in old_next_btns:
     if old in h:
-        h = h.replace(old, new_btn, 1)
-        found = True
+        h = h.replace(old, new_next_btn, 1)
+        found_btn = True
         break
-if not found:
-    h = h.replace(">Next" + end_btn, ' aria-label="Next">\u279c' + end_btn, 1)
+if not found_btn and ">Next" + end_btn in h and "tropeNext" in h:
+    h = h.replace(">Next" + end_btn, ' aria-label="Next">' + img + end_btn, 1)
+    found_btn = True
+if not found_btn:
+    raise SystemExit("tropeNext button label not found")
 
 TROPES = [
     ("ML_demon", "Morally Dark MMC"),
@@ -164,14 +199,14 @@ TROPES = [
     ("ML_dom", "Dom/Sub-Brat Heat"),
     ("ML_meta", "Fourth Wall Seduction (I'm talking to you)"),
 ]
-endtag = "<" + "/button>"
+endtag = "</button>"
 btns = "\n".join(
     '          <button type="button" class="trope-hit" data-q1="%s" aria-label="%s"><span class="trope-label">%s</span>%s'
     % (k, lab.replace("*", ""), lab, endtag)
     for k, lab in TROPES
 )
 bs = h.find('<div class="trope-hits" id="tropeHits"')
-be = h.find("<" + "/div>", bs) if bs >= 0 else -1
+be = h.find("</div>", bs) if bs >= 0 else -1
 if bs < 0 or be < 0:
     raise SystemExit("tropeHits missing")
 h = h[:bs] + '<div class="trope-hits" id="tropeHits" aria-label="Choose tropes">\n' + btns + "\n        " + h[be:]
@@ -260,11 +295,10 @@ need = [
     "top: 87.77%",
     "right: 100%",
     "margin-right: 0.62em",
-    "left: 70%",
+    "left: 72%",
     "top: 46.99%; bottom: auto",
+    "assets/next-arrow.png",
     "TROPES_AT = 11.05",
-    "aria-label=\"Next\">\u279c",
-    "border: 0;",
 ]
 missing = [n for n in need if n not in h]
 if missing:
@@ -273,7 +307,11 @@ if h.count('class="trope-hit"') != 17:
     raise SystemExit("expected 17 buttons")
 if "rgba(226,195,122,.14)" in h or "#070707" in h or "object-fit: cover" in h:
     raise SystemExit("wash/black/cover leaked")
-if 'id="tropeNext">Next' in h:
-    raise SystemExit("Next text label still present")
+if 'id="tropeNext">Next<' in h or 'aria-label="Next">Next<' in h:
+    raise SystemExit("Next label still visible")
+if ">/button>" in h:
+    raise SystemExit("broken closing button tag")
+if not (Path("enduring-pages/assets/next-arrow.png")).exists():
+    raise SystemExit("next-arrow.png was not written")
 DST.write_text(h)
 print("patched", DST, "bytes", DST.stat().st_size)
