@@ -1,203 +1,63 @@
 #!/usr/bin/env python3
-"""Upgrade unpacked door.html: gold checks on choose, no black text, Next → 13.13 reprint."""
+"""Place gold checks one space before each printed first letter."""
 from pathlib import Path
+import re
 
 p = Path("enduring-pages/door.html")
 if not p.exists():
-    raise SystemExit("enduring-pages/door.html missing after unzip")
+    raise SystemExit('enduring-pages/door.html missing after unzip')
 h = p.read_text()
+h = h.replace('const TROPES_AT = 13.15;', 'const TROPES_AT = 11.05;')
+h = h.replace('const TROPES_AT = 10.17;', 'const TROPES_AT = 11.05;')
+if 'const BLANK_AT' not in h:
+    h = h.replace('const TROPES_AT = 11.05;', 'const TROPES_AT = 11.05;\nconst BLANK_AT = 13.13;\nconst BLANK_MAX = 13.40;', 1)
+h = h.replace('          <source src="https://enduring-timeline.netlify.app/assets/book-open.mp4" type="video/mp4">\n', '')
+h = h.replace('color: #070707;', 'color: transparent;')
+h = h.replace('color:#070707;', 'color: transparent;')
+h = h.replace('text-shadow: 0 0 1px #000;', 'text-shadow: none;')
+OVERLAY = '\n  .stage {\n    position: absolute;\n    top: 50%;\n    left: 50%;\n    width: min(100vw, calc(100dvh * 9 / 16));\n    height: min(100dvh, calc(100vw * 16 / 9));\n    transform: translate(-50%, -50%);\n    z-index: 3;\n    overflow: visible;\n  }\n  .stage video,\n  .hero video {\n    display: block;\n    position: absolute;\n    inset: 0;\n    width: 100%;\n    height: 100%;\n    object-fit: contain;\n    object-position: center;\n    background: #000;\n  }\n  .trope-hits {\n    position: absolute;\n    inset: 0;\n    opacity: 0;\n    pointer-events: none;\n    z-index: 4;\n    overflow: visible;\n  }\n  .trope-hits.on { opacity: 1; pointer-events: auto; }\n  .trope-hit {\n    appearance: none;\n    position: absolute;\n    height: 5.05%;\n    margin: 0;\n    padding: 0;\n    border: 0;\n    background: transparent;\n    cursor: pointer;\n    display: block;\n    transform: translateY(-50%);\n    overflow: visible;\n    -webkit-tap-highlight-color: transparent;\n    z-index: 4;\n  }\n  .trope-hit:nth-child(1) { top: 13.91%; left: 24.31%; width: 47.89%; }\n  .trope-hit:nth-child(2) { top: 19.02%; left: 20.28%; width: 57.12%; }\n  .trope-hit:nth-child(3) { top: 24.02%; left: 31.67%; width: 33.53%; }\n  .trope-hit:nth-child(4) { top: 28.83%; left: 14.58%; width: 68.82%; }\n  .trope-hit:nth-child(5) { top: 33.40%; left: 15.56%; width: 67.04%; }\n  .trope-hit:nth-child(6) { top: 37.77%; left: 30.69%; width: 34.71%; }\n  .trope-hit:nth-child(7) { top: 42.38%; left: 25.00%; width: 46.40%; }\n  .trope-hit:nth-child(8) { top: 46.99%; left: 33.61%; width: 29.99%; }\n  .trope-hit:nth-child(9) { top: 51.76%; left: 21.94%; width: 53.06%; }\n  .trope-hit:nth-child(10) { top: 56.37%; left: 32.22%; width: 31.78%; }\n  .trope-hit:nth-child(11) { top: 61.17%; left: 28.06%; width: 39.64%; }\n  .trope-hit:nth-child(12) { top: 65.27%; left: 27.92%; width: 40.48%; }\n  .trope-hit:nth-child(13) { top: 69.77%; left: 22.36%; width: 52.24%; }\n  .trope-hit:nth-child(14) { top: 74.34%; left: 27.78%; width: 39.62%; }\n  .trope-hit:nth-child(15) { top: 79.06%; left: 20.00%; width: 56.00%; }\n  .trope-hit:nth-child(16) { top: 83.40%; left: 25.69%; width: 44.91%; }\n  .trope-hit:nth-child(17) { top: 87.77%; left: 24.44%; width: 49.16%; height: 6.35%; }\n  .trope-label {\n    position: absolute;\n    width: 1px;\n    height: 1px;\n    overflow: hidden;\n    clip: rect(0 0 0 0);\n    clip-path: inset(50%);\n    white-space: nowrap;\n    pointer-events: none;\n  }\n  .trope-hit.on::before {\n    content: "\\2713";\n    position: absolute;\n    right: 100%;\n    margin-right: 0.62em;\n    top: 50%;\n    transform: translateY(-50%);\n    color: #e2c37a;\n    font-size: clamp(15px, 3.6vw, 20px);\n    font-weight: 700;\n    line-height: 1;\n    text-shadow: 0 1px 4px rgba(0,0,0,.95);\n    pointer-events: none;\n  }\n'
 
-h = h.replace("const TROPES_AT = 13.15;", "const TROPES_AT = 11.05;")
-h = h.replace("const TROPES_AT = 10.17;", "const TROPES_AT = 11.05;")
-if "const BLANK_AT" not in h:
+h = re.sub(r'  \\.trope-hits \\{.*?\\n  \\.trope-next \\{', OVERLAY + '  .trope-next {', h, count=1, flags=re.S)
+h = re.sub(r'  \\.trope-hit\\.on \\.trope-label \\{[^}]+\\}\\n', '', h)
+h = h.replace('object-fit: cover;', 'object-fit: contain;')
+h = re.sub(r'  \\.trope-hit:active,\\n  \\.trope-hit\\.on \\{\\n    background: rgba\\(226,195,122,\\.14\\);\\n  \\}\\n', '', h)
+BTNS = '          <button type="button" class="trope-hit" data-q1="ML_demon" aria-label="Morally Dark MMC"><span class="trope-label">Morally Dark MMC</span></button>\n          <button type="button" class="trope-hit" data-q1="ML_prox" aria-label="Forced Proximity- One Bed"><span class="trope-label">Forced Proximity- One Bed</span></button>\n          <button type="button" class="trope-hit" data-q1="ML_medical" aria-label="Medical K!nk"><span class="trope-label">Medical K!nk</span></button>\n          <button type="button" class="trope-hit" data-q1="ML_wings" aria-label="Learn Me Agony- Don\'t do that again"><span class="trope-label">Learn Me Agony- Don\'t do that again</span></button>\n          <button type="button" class="trope-hit" data-q1="ML_enemies" aria-label="Enemies to Lovers to Enemies"><span class="trope-label">Enemies to Lovers to Enemies</span></button>\n          <button type="button" class="trope-hit" data-q1="ML_hefalls" aria-label="He. Falls. First"><span class="trope-label">He. Falls. First</span></button>\n          <button type="button" class="trope-hit" data-q1="ML_touch" aria-label="Tøuch Her and D!E"><span class="trope-label">Tøuch Her and D!E</span></button>\n          <button type="button" class="trope-hit" data-q1="ML_fated" aria-label="Fated Mates"><span class="trope-label">Fated Mates</span></button>\n          <button type="button" class="trope-hit" data-q1="ML_academia" aria-label="Academia / Battle Setting"><span class="trope-label">Academia / Battle Setting</span></button>\n          <button type="button" class="trope-hit" data-q1="ML_slowburn" aria-label="Slow BURN"><span class="trope-label">Slow BURN</span></button>\n          <button type="button" class="trope-hit" data-q1="ML_captor" aria-label="Cǃptor/ Capt!ve"><span class="trope-label">Cǃptor/ Capt!ve</span></button>\n          <button type="button" class="trope-hit" data-q1="ML_mortal" aria-label="Mortal / Immortal"><span class="trope-label">Mortal / Immortal</span></button>\n          <button type="button" class="trope-hit" data-q1="ML_harem" aria-label="Reverse Harem- Beg Me"><span class="trope-label">Reverse Harem- Beg Me</span></button>\n          <button type="button" class="trope-hit" data-q1="ML_forbidden" aria-label="Forbidden Feelings"><span class="trope-label">Forbidden Feelings</span></button>\n          <button type="button" class="trope-hit" data-q1="ML_possessive" aria-label="Possessive/ Protective MMC"><span class="trope-label">Possessive/ Protective MMC</span></button>\n          <button type="button" class="trope-hit" data-q1="ML_dom" aria-label="Dom/Sub-Brat Heat"><span class="trope-label">Dom/Sub-Brat Heat</span></button>\n          <button type="button" class="trope-hit" data-q1="ML_meta" aria-label="Fourth Wall Seduction (I\'m talking to you)"><span class="trope-label">Fourth Wall Seduction (I\'m talking to you)</span></button>'
+
+h = re.sub(
+    r'<div class="trope-hits" id="tropeHits" aria-label="Choose tropes">.*?</div>',
+    '<div class="trope-hits" id="tropeHits" aria-label="Choose tropes">\n' + BTNS + '\n        </div>',
+    h, count=1, flags=re.S)
+if 'id="doorStage"' not in h:
     h = h.replace(
-        "const TROPES_AT = 11.05;",
-        "const TROPES_AT = 11.05;\nconst BLANK_AT = 13.13;\nconst BLANK_MAX = 13.40;",
-        1,
-    )
-
-# Kill black-on-click text. Labels stay invisible over the printed gold.
-# Gold check sits one space in front of the line.
-OLD_BLACK = """  .trope-hit.on .trope-label {
-    color: #070707;
-    font-weight: 600;
-    text-shadow: 0 0 1px #000;
-  }"""
-NEW_CHECK = """  .trope-hit.on .trope-label {
-    color: transparent;
-    font-weight: 400;
-    text-shadow: none;
-  }
-  .trope-hit:active,
-  .trope-hit.on {
-    background: rgba(226,195,122,.14);
-  }
-  .trope-hit.on::before {
-    content: "\\2713";
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translate(-1.15em, -50%);
-    color: #e2c37a;
-    font-size: clamp(15px, 3.6vw, 20px);
-    font-weight: 700;
-    line-height: 1;
-    text-shadow: 0 1px 4px rgba(0,0,0,.95);
-    pointer-events: none;
-  }"""
-if OLD_BLACK in h:
-    h = h.replace(OLD_BLACK, NEW_CHECK, 1)
-elif ".trope-hit.on::before" not in h:
+        '<div class="hero">\n        <video id="doorZoom"',
+        '<div class="hero">\n        <div class="stage" id="doorStage">\n        <video id="doorZoom"',
+        1)
     h = h.replace(
-        "  .trope-hit.on .trope-label {\n    color: #070707;",
-        "  .trope-hit.on .trope-label {\n    color: transparent;",
-        1,
-    )
-    if ".trope-hit.on::before" not in h:
-        h = h.replace(
-            "  .trope-next {",
-            NEW_CHECK.split(".trope-hit:active")[0] + "  .trope-hit:active,\n  .trope-hit.on {\n    background: rgba(226,195,122,.14);\n  }\n" + NEW_CHECK[NEW_CHECK.find("  .trope-hit.on::before"):] + "  .trope-next {",
-            1,
-        )
-
-# Never paint black ink over the page or the starfield.
-h = h.replace("color: #070707;", "color: transparent;")
-h = h.replace("color:#070707;", "color: transparent;")
-h = h.replace("color: #000;", "color: #e2c37a;")
-h = h.replace("text-shadow: 0 0 1px #000;", "text-shadow: none;")
-
-CSS = """
-  .chosen-stack {
-    position: absolute; left: 9%; right: 9%; top: 12%; bottom: 10%;
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
-    gap: 0.38em; z-index: 6; pointer-events: none; text-align: center;
-    opacity: 0; visibility: hidden; transition: opacity .7s ease;
-  }
-  .hero.reprint .chosen-stack, .stage.reprint .chosen-stack { opacity: 1; visibility: visible; }
-  .chosen-stack i {
-    display: block; color: #e8c98a; font-family: Cinzel, Palatino, Georgia, serif;
-    font-style: normal; font-weight: 600; font-size: clamp(13px, 3.05vw, 19px);
-    letter-spacing: .045em; line-height: 1.18;
-    text-shadow: 0 0 14px rgba(201,163,106,.28), 0 1px 3px rgba(0,0,0,.92);
-  }
-  .chosen-stack i em {
-    display: block; margin-top: .12em; font-size: .78em; font-weight: 500;
-    letter-spacing: .06em; font-style: italic;
-    font-family: \"IM Fell English\", Palatino, Georgia, serif; opacity: .88;
-  }
-  .hero.reprint .trope-hits, .hero.reprint .trope-next,
-  .stage.reprint .trope-hits, .stage.reprint .trope-next {
-    opacity: 0 !important; pointer-events: none !important;
-  }
-"""
-if ".chosen-stack" not in h:
-    h = h.replace("  .yes-btn {", CSS + "  .yes-btn {", 1)
-else:
-    h = h.replace(".chosen-stack i {\n    display: block; color: #070707", ".chosen-stack i {\n    display: block; color: #e8c98a")
-
+        '<button type="button" id="start" class="yes-btn">Yes</button>\n        </div>',
+        '<button type="button" id="start" class="yes-btn">Yes</button>\n        </div>\n        </div>',
+        1)
 if 'id="chosenStack"' not in h:
     h = h.replace(
         '<button type="button" class="trope-next"',
         '<div class="chosen-stack" id="chosenStack" aria-live="polite"></div>\n        <button type="button" class="trope-next"',
-        1,
-    )
-
-OLD_PLAY = """function playDoorZoom() {
-  const v = document.getElementById('doorZoom');
-  const yes = document.getElementById('start');
-  if (!v || !yes) return;"""
-
-NEW_PLAY = """function playDoorZoom() {
-  const v = document.getElementById('doorZoom');
-  const yes = document.getElementById('start');
-  const next = document.getElementById('tropeNext');
-  const hits = document.getElementById('tropeHits');
-  if (!v || !yes || !next || !hits) return;"""
-
-if OLD_PLAY in h:
-    h = h.replace(OLD_PLAY, NEW_PLAY, 1)
+        1)
+OPEN_NEXT = "function showChosenOnBlank() {\n  const stack = document.getElementById('chosenStack');\n  const host = document.getElementById('doorStage') || document.querySelector('.hero');\n  const selected = [...document.querySelectorAll('.trope-hit.on')];\n  if (stack) {\n    stack.textContent = '';\n    stack.setAttribute('data-n', String(selected.length));\n    selected.forEach(function(btn) {\n      const raw = ((btn.querySelector('.trope-label') || btn).textContent || '').replace(/\\*/g, '').trim();\n      const cut = raw.indexOf(' (');\n      const row = document.createElement('i');\n      if (cut > 0) {\n        row.textContent = raw.slice(0, cut);\n        const sub = document.createElement('em');\n        sub.textContent = raw.slice(cut + 1);\n        row.appendChild(sub);\n      } else {\n        row.textContent = raw;\n      }\n      stack.appendChild(row);\n    });\n  }\n  if (host) host.classList.add('reprint');\n  const hitsEl = document.getElementById('tropeHits');\n  if (hitsEl) hitsEl.classList.remove('on');\n  const nxt = document.getElementById('tropeNext');\n  if (nxt) nxt.classList.remove('on');\n}\n(function bindTropeNext() {\n  const v = document.getElementById('doorZoom');\n  const next = document.getElementById('tropeNext');\n  const hits = document.getElementById('tropeHits');\n  if (!v || !next || !hits) return;\n  let turning = false;\n  function holdBlank() {\n    try { v.pause(); v.currentTime = 13.13; } catch (e) {}\n    turning = false;\n    showChosenOnBlank();\n  }\n  function watch() {\n    if (!turning) return;\n    if (v.currentTime >= 13.13) { holdBlank(); return; }\n    if (typeof v.requestVideoFrameCallback === 'function') v.requestVideoFrameCallback(function(){ watch(); });\n    else requestAnimationFrame(watch);\n  }\n  v.addEventListener('timeupdate', function() {\n    if (turning && v.currentTime >= 13.13) holdBlank();\n  });\n  next.onclick = function() {\n    if (hits.querySelectorAll('.trope-hit.on').length < 3) return;\n    hits.classList.remove('on');\n    next.classList.remove('on');\n    turning = true;\n    v.play().catch(function(){});\n    watch();\n  };\n})();"
 
 OLD_NEXT = """document.getElementById('tropeNext').onclick = () => {
   document.body.classList.remove('landing-on');
   show('s2');
 };"""
-NEW_NEXT = """function showChosenOnBlank() {
-  const stack = document.getElementById('chosenStack');
-  const host = document.getElementById('doorStage') || document.querySelector('.hero');
-  const selected = [...document.querySelectorAll('.trope-hit.on')];
-  if (stack) {
-    stack.textContent = '';
-    stack.setAttribute('data-n', String(selected.length));
-    selected.forEach(function(btn) {
-      const raw = ((btn.querySelector('.trope-label') || btn).textContent || '').replace(/\\*/g, '').trim();
-      const cut = raw.indexOf(' (');
-      const row = document.createElement('i');
-      if (cut > 0) {
-        row.textContent = raw.slice(0, cut);
-        const sub = document.createElement('em');
-        sub.textContent = raw.slice(cut + 1);
-        row.appendChild(sub);
-      } else {
-        row.textContent = raw;
-      }
-      stack.appendChild(row);
-    });
-  }
-  if (host) host.classList.add('reprint');
-  const hitsEl = document.getElementById('tropeHits');
-  if (hitsEl) hitsEl.classList.remove('on');
-  const nxt = document.getElementById('tropeNext');
-  if (nxt) nxt.classList.remove('on');
-}
-(function bindTropeNext() {
-  const v = document.getElementById('doorZoom');
-  const next = document.getElementById('tropeNext');
-  const hits = document.getElementById('tropeHits');
-  if (!v || !next || !hits) return;
-  let turning = false;
-  function holdBlank() {
-    try { v.pause(); v.currentTime = 13.13; } catch (e) {}
-    turning = false;
-    showChosenOnBlank();
-  }
-  function watch() {
-    if (!turning) return;
-    if (v.currentTime >= 13.13) { holdBlank(); return; }
-    if (typeof v.requestVideoFrameCallback === 'function') v.requestVideoFrameCallback(function(){ watch(); });
-    else requestAnimationFrame(watch);
-  }
-  v.addEventListener('timeupdate', function() {
-    if (turning && v.currentTime >= 13.13) holdBlank();
-  });
-  next.onclick = function() {
-    if (hits.querySelectorAll('.trope-hit.on').length < 3) return;
-    hits.classList.remove('on');
-    next.classList.remove('on');
-    turning = true;
-    v.play().catch(function(){});
-    watch();
-  };
-})();"""
-
 if OLD_NEXT in h:
-    h = h.replace(OLD_NEXT, NEW_NEXT, 1)
-elif "showChosenOnBlank" not in h:
-    raise SystemExit("could not bind Next away from s2")
+    h = h.replace(OLD_NEXT, OPEN_NEXT, 1)
 
-h = h.replace(
-    "document.getElementById('tropeNext').classList.add('on');",
-    "if (document.querySelectorAll('.trope-hit.on').length >= 3) document.getElementById('tropeNext').classList.add('on');",
-)
-
-if "function syncTropeNext()" not in h:
-    h = h.replace(
-        """document.querySelectorAll('.trope-hit, #s1 .ink').forEach(btn => {
+if 'function syncTropeNext()' not in h:
+    old = """document.querySelectorAll('.trope-hit, #s1 .ink').forEach(btn => {
   btn.addEventListener('click', () => {
     btn.classList.toggle('on');
     syncQ1(btn.dataset.q1);
   });
-});""",
-        """function syncTropeNext() {
+});"""
+    new = """function syncTropeNext() {
   const n = document.querySelectorAll('.trope-hit.on').length;
   const b = document.getElementById('tropeNext');
   if (b) b.classList.toggle('on', n >= 3);
@@ -208,18 +68,21 @@ document.querySelectorAll('.trope-hit, #s1 .ink').forEach(btn => {
     syncQ1(btn.dataset.q1);
     syncTropeNext();
   });
-});""",
-        1,
-    )
+});"""
+    if old in h:
+        h = h.replace(old, new, 1)
 
-if "BLANK_AT = 13.13" not in h and "currentTime = 13.13" not in h:
-    raise SystemExit("13.13 freeze missing")
-if ".trope-hit.on::before" not in h and "content: \"\\2713\"" not in h and "content: \"✓\"" not in h:
-    if "2713" not in h and "✓" not in h:
-        raise SystemExit("gold check missing")
-if "#070707" in h:
-    raise SystemExit("black label color leaked")
-if "show('s2')" in h[h.find("tropeNext"):h.find("tropeNext")+400]:
-    raise SystemExit("Next still jumps to s2")
+if h.count('class="trope-hit"') != 17:
+    raise SystemExit('expected 17 trope buttons, got %s' % h.count('class="trope-hit"'))
+if 'top: 13.91%' not in h or 'left: 14.58%' not in h or 'top: 87.77%' not in h:
+    raise SystemExit('17-line first-letter geometry missing')
+if 'right: 100%' not in h or 'margin-right: 0.62em' not in h:
+    raise SystemExit('check not one space before first letter')
+if 'rgba(226,195,122,.14)' in h:
+    raise SystemExit('yellow wash still present')
+if '#070707' in h:
+    raise SystemExit('black label color leaked')
+if 'object-fit: cover' in h:
+    raise SystemExit('cover leaked')
 p.write_text(h)
-print("patched", p, "bytes", p.stat().st_size)
+print('patched', p, 'bytes', p.stat().st_size)
