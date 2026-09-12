@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Upgrade unpacked door.html: Next at 3 checks → freeze 13.13 → chosen lines."""
+"""Upgrade unpacked door.html: gold checks on choose, no black text, Next → 13.13 reprint."""
 from pathlib import Path
 
 p = Path("enduring-pages/door.html")
@@ -15,6 +15,56 @@ if "const BLANK_AT" not in h:
         "const TROPES_AT = 11.05;\nconst BLANK_AT = 13.13;\nconst BLANK_MAX = 13.40;",
         1,
     )
+
+# Kill black-on-click text. Labels stay invisible over the printed gold.
+# Gold check sits one space in front of the line.
+OLD_BLACK = """  .trope-hit.on .trope-label {
+    color: #070707;
+    font-weight: 600;
+    text-shadow: 0 0 1px #000;
+  }"""
+NEW_CHECK = """  .trope-hit.on .trope-label {
+    color: transparent;
+    font-weight: 400;
+    text-shadow: none;
+  }
+  .trope-hit:active,
+  .trope-hit.on {
+    background: rgba(226,195,122,.14);
+  }
+  .trope-hit.on::before {
+    content: "\\2713";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translate(-1.15em, -50%);
+    color: #e2c37a;
+    font-size: clamp(15px, 3.6vw, 20px);
+    font-weight: 700;
+    line-height: 1;
+    text-shadow: 0 1px 4px rgba(0,0,0,.95);
+    pointer-events: none;
+  }"""
+if OLD_BLACK in h:
+    h = h.replace(OLD_BLACK, NEW_CHECK, 1)
+elif ".trope-hit.on::before" not in h:
+    h = h.replace(
+        "  .trope-hit.on .trope-label {\n    color: #070707;",
+        "  .trope-hit.on .trope-label {\n    color: transparent;",
+        1,
+    )
+    if ".trope-hit.on::before" not in h:
+        h = h.replace(
+            "  .trope-next {",
+            NEW_CHECK.split(".trope-hit:active")[0] + "  .trope-hit:active,\n  .trope-hit.on {\n    background: rgba(226,195,122,.14);\n  }\n" + NEW_CHECK[NEW_CHECK.find("  .trope-hit.on::before"):] + "  .trope-next {",
+            1,
+        )
+
+# Never paint black ink over the page or the starfield.
+h = h.replace("color: #070707;", "color: transparent;")
+h = h.replace("color:#070707;", "color: transparent;")
+h = h.replace("color: #000;", "color: #e2c37a;")
+h = h.replace("text-shadow: 0 0 1px #000;", "text-shadow: none;")
 
 CSS = """
   .chosen-stack {
@@ -42,6 +92,8 @@ CSS = """
 """
 if ".chosen-stack" not in h:
     h = h.replace("  .yes-btn {", CSS + "  .yes-btn {", 1)
+else:
+    h = h.replace(".chosen-stack i {\n    display: block; color: #070707", ".chosen-stack i {\n    display: block; color: #e8c98a")
 
 if 'id="chosenStack"' not in h:
     h = h.replace(
@@ -162,6 +214,11 @@ document.querySelectorAll('.trope-hit, #s1 .ink').forEach(btn => {
 
 if "BLANK_AT = 13.13" not in h and "currentTime = 13.13" not in h:
     raise SystemExit("13.13 freeze missing")
+if ".trope-hit.on::before" not in h and "content: \"\\2713\"" not in h and "content: \"✓\"" not in h:
+    if "2713" not in h and "✓" not in h:
+        raise SystemExit("gold check missing")
+if "#070707" in h:
+    raise SystemExit("black label color leaked")
 if "show('s2')" in h[h.find("tropeNext"):h.find("tropeNext")+400]:
     raise SystemExit("Next still jumps to s2")
 p.write_text(h)
